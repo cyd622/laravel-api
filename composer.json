@@ -1,0 +1,36 @@
+{
+    "name": "cyd622/laravel-api",
+    "description": "Laravel开发API助手",
+    "keywords": [
+        "laravel",
+        "api"
+    ],
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "cyd622",
+            "email": "luffywang622@gmail.com"
+        }
+    ],
+    "require": {
+        "php": ">=7.1",
+        "tymon/jwt-auth": "1.0.0-rc.4.1"
+    },
+    "autoload": {
+        "psr-4": {
+            "Cyd622\\LaravelApi\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Cyd622\\LaravelApi\\Tests\\": "tests/"
+        }
+    },
+    "extra": {
+        "laravel": {
+            "providers": [
+                "Cyd622\\LaravelApi\\ApiServiceProvider"
+            ]
+        }
+    }
+}
