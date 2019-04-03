@@ -167,7 +167,7 @@ class CacheResponseMiddleware
         if (\Cache::getStore() instanceof \Illuminate\Cache\TaggableStore) {
             return \Cache::tags(self::CACHE_TAG);
         }
-        $this->cacheKey = self::CACHE_TAG . '.' . $this->cacheKey;
+        $this->cacheKey = \Illuminate\Support\Str::start($this->cacheKey, self::CACHE_TAG . '.');
         return app('cache');
     }
 
