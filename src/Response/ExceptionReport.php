@@ -128,7 +128,6 @@ class ExceptionReport
         if (config('laravel_api.exception.do_report')) {
             $this->doReport = array_merge($this->doReport, config('laravel_api.exception.do_report'));
         }
-
     }
 
     /**
@@ -140,7 +139,13 @@ class ExceptionReport
              return false;
          }*/
 
-        foreach (array_keys($this->doReport) as $report) {
+        // 异常越靠前权重越高
+        // FIXME 将 Exception 顶级异常放到最后
+        $reportList = array_keys($this->doReport);
+        unset($reportList[array_search('Exception', $reportList)]);
+        array_push($reportList, 'Exception');
+
+        foreach ($reportList as $report) {
             if ($this->exception instanceof $report) {
                 $this->report = $report;
                 return true;
