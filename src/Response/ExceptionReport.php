@@ -179,15 +179,19 @@ class ExceptionReport
         }
 
         // 如果什么都拿不到默认就500了
-        $httpCode = $httpCode ?? 500;
+        $httpCode = $httpCode ?? config('laravel_api.exception.default_http_code', 500);
 
-        $statusCode = data_get($reportMessage, 'status_code', $httpCode);
+        $statusCode = data_get($reportMessage, 'status_code');
+        if (!$statusCode && method_exists($this->exception, 'getCode')) {
+            $statusCode = $this->exception->getCode();
+        }
+        $statusCode = $statusCode ?: $httpCode;
 
         // 非生产环境显示错误详情
         if (config('app.env') != 'production') {
             $message = $this->exception->getMessage() ?: data_get($reportMessage, 'msg', 'error');
         } else {
-            $message = data_get($reportMessage, 'msg', 'error');
+            $message = data_get($reportMessage, 'msg', $this->exception->getMessage());
         }
 
         // 表单验证异常返回的是数组,这里返回第一个错误消息
