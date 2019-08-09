@@ -25,6 +25,9 @@ return [
         ],
     ],
     'exception' => [
+        // 是否强制http状态码。null,空，false,表示不是强制
+        'force_http_code' => 200,
+        // 在获取不到异常信息的状态码时设置状态码，设置force_http_code时，不生效
         'default_http_code' => 500,
         'do_report' => [
             UnauthorizedHttpException::class => [

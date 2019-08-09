@@ -44,7 +44,7 @@
 > - [x] jwt-auth用户认证与无感知自动刷新
 > - [x] jwt-auth多角色认证不串号
 > - [x] 单一设备登陆
-
+> - [x] 异常捕获，http状态码统一
 -----
 
 ## 安装
@@ -274,8 +274,13 @@ protected $routeMiddleware = [
 ```
 2.路由器修改
 ```
-Route::middleware('api.refresh')->group(function () {
-    // jwt认证路由以及无感刷新路由
+Route::middleware('api.refresh:api')->group(function () {
+    // api看守器登陆授权
+    ...
+});
+
+Route::middleware('api.refresh:admin')->group(function () {
+    // admin看守器登陆授权
     ...
 });
 ```
@@ -292,7 +297,7 @@ class LoginController extends Controller
 * 自动刷新用户认证
 > * 捕获到了 token 过期所抛出的 TokenExpiredException异常
 > * 刷新用户的 token `$token = $this->auth->refresh();`
-> * 使用一次性登录以保证此次请求的成功
+> * 使用一次性登录以保证此次请求的成功 注意需要设置config jwt宽限时间
 > * `Auth::guard('api')->onceUsingId($this->auth->manager()->getPayloadFactory()->buildClaimsCollection()->toPlainArray()['sub']);`
 > * 在响应头中返回新的 token `$this->setAuthenticationHeader($next($request), $token);`
 

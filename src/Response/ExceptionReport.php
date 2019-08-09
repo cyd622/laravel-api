@@ -199,6 +199,11 @@ class ExceptionReport
             $message = current($this->exception->validator->errors()->all());
         }
 
+        // 设置了强制状态码
+        if (config('laravel_api.exception.force_http_code')) {
+            $httpCode = config('laravel_api.exception.force_http_code');
+        }
+
         return $this->setHttpCode($httpCode)->setStatusCode($statusCode)->message($message);
     }
 }
