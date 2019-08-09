@@ -24,30 +24,29 @@ class RefreshTokenMiddleware extends BaseMiddleware
      * Handle an incoming request.
      * @param $request
      * @param Closure $next
+     * @param null $guard
      * @return \Illuminate\Http\JsonResponse|\Illuminate\Http\Response|mixed
-     * @throws JWTException
-     * @throws TokenInvalidException
      */
-    public function handle($request, Closure $next)
+    public function handle($request, Closure $next, $guard = null)
     {
         // Check token and throws exception
         $this->checkForToken($request);
 
         // Get default guard
-        $presentGuard = Auth::getDefaultDriver();
+        $presentGuard = $guard ?? Auth::getDefaultDriver();
 
-        $token = Auth::getToken();
+        $token = $this->auth->getToken()->get();
 
-        // Get guard from payload by token
-        $payload = Auth::manager()->getJWTProvider()->decode($token->get());
+        $authGuard = $this->auth->getClaim('guard');
 
-        if (empty($payload['guard']) || $payload['guard'] != $presentGuard) {
-            throw new TokenInvalidException();
+        if (!$authGuard || $authGuard != $presentGuard) {
+            throw new TokenInvalidException('auth guard invalid');
         }
 
         try {
 
-            if ($this->auth->parseToken()->authenticate()) {
+            if ($user = auth($authGuard)->authenticate()) {
+                $request->guard = $authGuard;
                 return $next($request);
             }
 
@@ -59,11 +58,11 @@ class RefreshTokenMiddleware extends BaseMiddleware
 
                 $token = $this->auth->refresh();
                 // Use once login to ensure the success of this request
-                Auth::onceUsingId($this->auth->manager()->getPayloadFactory()->buildClaimsCollection()->toPlainArray()['sub']);
+                Auth::guard($authGuard)->onceUsingId($this->auth->getClaim('sub'));
 
                 // Save user token in job
-                $user = Auth::user();
-                SaveUserTokenJob::dispatch($user, $token);
+                $user = Auth::guard($authGuard)->user();
+                SaveUserTokenJob::dispatch($user, $token, $authGuard);
 
             } catch (JWTException $exception) {
                 // All token not used. need re-login

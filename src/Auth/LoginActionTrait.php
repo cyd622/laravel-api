@@ -14,6 +14,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
 use Cyd622\LaravelApi\Jobs\SaveUserTokenJob;
 use Tymon\JWTAuth\Exceptions\TokenExpiredException;
+use Tymon\JWTAuth\Facades\JWTAuth;
 
 trait LoginActionTrait
 {
@@ -51,11 +52,14 @@ trait LoginActionTrait
     /**
      * Get user last token
      * @param \Illuminate\Database\Eloquent\Model|\Illuminate\Contracts\Auth\Authenticatable $user
-     * @return mixed
+     * @param $guard
+     * @return string|null
      */
-    protected function getUserLastToken($user)
+    protected function getUserLastToken($user, $guard)
     {
-        $key = "User.{$user->id}:LastToken";
+        $uid = $user->getKey();
+        // User.api.1:LastToken
+        $key = sprintf("User.%s-%s:LastToken", $guard, $uid);
         return Cache::get($key);
     }
 
@@ -75,27 +79,29 @@ trait LoginActionTrait
      */
     protected function authenticateClient(Request $request)
     {
-        $presentGuard = Auth::getDefaultDriver();
+        $presentGuard = $request->get('guard', Auth::getDefaultDriver());
 
         $credentials = $this->credentials($request);
 
         // add guard sign to payload.
-        $token = Auth::claims(['guard' => $presentGuard])->attempt($credentials);
+        $token = Auth::guard($presentGuard)->claims(['guard' => $presentGuard])->attempt($credentials);
 
         if ($token) {
-            $user = Auth::user();
-            $lastToken = $this->getUserLastToken($user);
+
+            $user = Auth::guard($presentGuard)->user();
+
+            $lastToken = $this->getUserLastToken($user, $presentGuard);
 
             if ($lastToken) {
                 try {
-                    Auth::setToken($lastToken)->invalidate();
+                    JWTAuth::setToken($lastToken)->invalidate();
                 } catch (TokenExpiredException $e) {
                     // Because an exception will be thrown if an expired token is
                     // invalidated again, we catch the exception without any processing.
                 }
             }
 
-            SaveUserTokenJob::dispatch($user, $token);
+            SaveUserTokenJob::dispatch($user, $token, $presentGuard);
             return $this->success($user, ['token_type' => 'Bearer', 'access_token' => $token,]);
         }
 
